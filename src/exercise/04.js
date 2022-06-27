@@ -1,12 +1,27 @@
 import { useEffect, useState } from "react";
 
+function getLocalStorageData(key) {
+  let stringifiedValue = localStorage.getItem(key);
+
+  try {
+    stringifiedValue = JSON.parse(stringifiedValue)
+  } catch {}
+  
+  return stringifiedValue;
+}
+
+function setLocalStorageData(key, value) {
+  const stringifiedValue = JSON.stringify(value);
+  localStorage.setItem(key, stringifiedValue);
+}
+
 /* 
   the two parameters for this function are: 
   - key: the key on localStorage where we are saving this data
   - initialValue: the initial value of state
 */
 export function useLocalStorage(key, initialValue = null) {
-  const [state, setState] = useState(localStorage.getItem(key) || initialValue);
+  const [state, setState] = useState(getLocalStorageData(key) || initialValue);
 
   /* 
    ✅ write a useEffect hook 
@@ -14,9 +29,20 @@ export function useLocalStorage(key, initialValue = null) {
    don't forget the dependencies array!
   */
   useEffect(() => {
-    localStorage.setItem(key, state);
+    setLocalStorageData(key, state);
   }, [key, state]);
 
+  useEffect(() => {
+    function handleStorageUpdate(event) {
+      const value = getLocalStorageData(key);
+      setState(value)
+    }
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return function cleanup() {
+      window.removeEventListener("storage", handleStorageUpdate);
+    }
+  }, [key])
   /* 
    ✅ return the same interface as useState:
    an array with state and a setState function
@@ -42,7 +68,7 @@ function Form() {
 
 function FormWithObject() {
   // 🤓 save me for the bonus! when you're ready, update this useState to use your useLocalStorage hook instead
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useLocalStorage("blog_data", {
     title: "",
     content: "",
   });
